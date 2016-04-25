@@ -17,20 +17,22 @@ import android.view.Window;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-/**
- * Created by s1112001 on 2015/4/3.
- */
 public class MainActivity extends Activity {
 
     private SwipeRefreshLayout mSwipeLayout= null;
     private WebView browser= null;
     private ProgressBar bar=null;
     private long exitTime = 0;
+    private String url;////
+    private LinearLayout linearLayout1;////
+    private Button button;////
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,7 +69,7 @@ public class MainActivity extends Activity {
         });
 
         SharedPreferences  sharedPreferences = getSharedPreferences("configuration", 0);
-        String url = sharedPreferences.getString("url",getResources().getString(R.string.url));
+        url = sharedPreferences.getString("url",getResources().getString(R.string.url));
         browser.loadUrl(url);
 
         mSwipeLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_container);
@@ -75,6 +77,7 @@ public class MainActivity extends Activity {
             @Override
             public void onRefresh() {
                 //重新刷新页面
+                linearLayout1.setVisibility(View.GONE);////
                 browser.loadUrl(browser.getUrl());
             }
         });
@@ -90,6 +93,27 @@ public class MainActivity extends Activity {
                 //  重写此方法表明点击网页里面的链接还是在当前的webview里跳转，不跳到浏览器那边
                 view.loadUrl(url);
                 return true;
+            }
+            @Override
+            public void onReceivedError(WebView view, int errorCode,
+                                        String description, String failingUrl) {
+                //这里进行无网络或错误处理，具体可以根据errorCode的值进行判断，做跟详细的处理。
+                view.loadDataWithBaseURL(null, "", "text/html", "utf-8", null);
+                linearLayout1.setVisibility(View.VISIBLE);
+                super.onReceivedError(view, errorCode, description, failingUrl);
+            }
+        });
+        linearLayout1 = (LinearLayout)findViewById(R.id.linearLayout1);
+        button = (Button)findViewById(R.id.online_error_btn_retry);
+        button.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                boolean networkState = NetworkDetector.detect(MainActivity.this);
+                if (networkState) {
+                    linearLayout1.setVisibility(View.GONE);
+                    browser.loadUrl(url);
+                }else{
+                    Toast.makeText(getApplicationContext(), "请检查网络连接！", Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
